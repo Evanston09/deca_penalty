@@ -1,0 +1,8 @@
+@import "tailwindcss";
+
+
+@theme {
+  --color-deca-blue: #0072ce;
+  --color-deca-blue-hover: #005DA8;
+  --font-sans: 'Montserrat Variable', sans-serif;
+}
