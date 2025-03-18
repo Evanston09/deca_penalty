@@ -2,7 +2,6 @@ import { useCallback, useState } from 'react'
 import { useDropzone } from 'react-dropzone';
 import { useNavigate } from "react-router";
 
-
 function Upload() {
     const navigate = useNavigate();
     const [pageNumber, setPageNumber] = useState(10);
@@ -34,7 +33,7 @@ function Upload() {
         navigate('/results',
             {
                 state: {
-                    pdf: URL.createObjectURL(pdfUpload),
+                    pdf: pdfUpload,
                     pageNumber: pageNumber,
                     isIntegrityDone: isIntegrityDone,
                     useImages: useImages
@@ -46,12 +45,12 @@ function Upload() {
 
   return (
     <>
-            <h1 className='text-5xl font-semibold mb-8'>DECA Written Event Penalty Checker</h1>
+            <h1 className="text-2xl md:text-5xl font-semibold mb-8">Written Event Penalty Checker</h1>
 
             <form action={submit} className='flex flex-col gap-4'>
 
                 <div>
-                    <div className='text-lg h-64 w-full flex items-center justify-center border-1 border-gray-200 border-dashed rounded-lg' {...getRootProps()}>
+                    <div className='text-sm md:text-lg p-4 h-64 w-full flex items-center justify-center border-1 border-gray-200 border-dashed rounded-lg' {...getRootProps()}>
                         <input {...getInputProps()} />
                         {
                             pdfUpload ? (
@@ -71,7 +70,7 @@ function Upload() {
                     }
                 </div>
 
-                <div className='flex flex-col gap-1'>
+                <div className='text-sm md:text-base flex flex-col gap-1'>
                     <label>
                         Have you completed the Written Statement of Assurances and Academic Integrity?
                         <input 
@@ -107,7 +106,7 @@ function Upload() {
                     </label>
                 </div>
 
-                <button className='font-semibold w-full bg-deca-blue hover:bg-deca-blue-hover p-4 rounded-lg'>Check Written Event!</button>
+                <button className='text-sm md:text-base font-semibold w-full bg-deca-blue hover:bg-deca-blue-hover p-4 rounded-lg'>Check Written Event!</button>
             </form>
     </>
   )
