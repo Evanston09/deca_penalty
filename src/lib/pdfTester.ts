@@ -1,13 +1,14 @@
 import * as pdfjsLib from "pdfjs-dist";
 import Tesseract, { createWorker, PSM } from 'tesseract.js';
+const { setLogging } = Tesseract;
 
 // From react-pdf docs
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url
+    'pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url
 ).toString()
 
 export async function checkPDF(pdfLink: string, pageNumber: number, useImages: boolean) {
-    const pdf = await pdfjsLib.getDocument(pdfLink).promise; 
+    const pdf = await pdfjsLib.getDocument(pdfLink).promise;
     const pages = await getPages(pdf);
     return {
         isPageLimit: checkPageLimit(pdf, pageNumber),
@@ -19,7 +20,7 @@ export async function checkPDF(pdfLink: string, pageNumber: number, useImages: b
 function getPages(pdf: pdfjsLib.PDFDocumentProxy) {
     const pagesPromises = []
 
-    for (let i=1; i<=pdf.numPages; i++) {
+    for (let i = 1; i <= pdf.numPages; i++) {
         pagesPromises.push(pdf.getPage(i));
     }
 
@@ -37,13 +38,15 @@ async function verifyDimensions(pages: pdfjsLib.PDFPageProxy[]) {
         const width = ((page.view[3] - page.view[1]) / 72) * page.userUnit;
 
         // Arbitrary value to round to due to inaccuraccy of PDF
-        return +length.toFixed(5) === 8.5 && +width.toFixed(5) === 11; });
+        return +length.toFixed(5) === 8.5 && +width.toFixed(5) === 11;
+    });
 }
 
 async function checkIfClearNumbering(pages: pdfjsLib.PDFPageProxy[], analyzeImages: boolean) {
     let worker: Tesseract.Worker;
     if (analyzeImages) {
         worker = await createWorker('eng');
+        setLogging(true);
         worker.setParameters(
             // Assuming most numbers will just be in a single line
             { tessedit_pageseg_mode: PSM.SINGLE_LINE }
@@ -61,10 +64,12 @@ async function checkIfClearNumbering(pages: pdfjsLib.PDFPageProxy[], analyzeImag
                 imageValue = await getTextFromImagesOnPages(page, worker);
                 console.log("here 2");
             }
+            console.log(page.pageNumber);
             return [...textValue, ...imageValue];
         })
     );
 
+    console.log("finished");
     if (worker) {
         await worker.terminate();
     }
@@ -85,7 +90,7 @@ async function checkIfClearNumbering(pages: pdfjsLib.PDFPageProxy[], analyzeImag
             pageCount = 1;
         }
     })
-    
+
     // Again 2 is for TOC and title
     if (pageCount >= pages.length - 2) {
         return true;
@@ -96,26 +101,27 @@ async function checkIfClearNumbering(pages: pdfjsLib.PDFPageProxy[], analyzeImag
 
 async function getTextFromImagesOnPages(page: pdfjsLib.PDFPageProxy, worker: Tesseract.Worker) {
     const imagePromises = [];
-        const ops = await page.getOperatorList();
+    const ops = await page.getOperatorList();
 
-        // This is interesting...(it sucks)
-       for (let i=0; i < ops.fnArray.length; i++) {
-            if (ops.fnArray[i] == pdfjsLib.OPS.paintImageXObject) {
-                const op = ops.argsArray[i][0];
-
-                imagePromises.push(
-                    new Promise((resolve)=> {
-                        page.objs.get(op, (image) =>{
-                            const canvas = new OffscreenCanvas(image.width, image.height)
-                            const ctx: ImageBitmapRenderingContext = canvas.getContext('bitmaprenderer')!;
-                            ctx.transferFromImageBitmap(image.bitmap);
+    // This is interesting...(it sucks)
+    for (let i = 0; i < ops.fnArray.length; i++) {
+        if (ops.fnArray[i] === pdfjsLib.OPS.paintImageXObject) {
+            const op = ops.argsArray[i][0];
+            imagePromises.push(
+                new Promise((resolve) => {
+                    page.objs.get(op, (image: any) => {
+                        const canvas = new OffscreenCanvas(image.width, image.height)
+                        const ctx: ImageBitmapRenderingContext = canvas.getContext('bitmaprenderer')!;
+                        createImageBitmap(image.bitmap).then((imageBitmap) => {
+                            ctx.transferFromImageBitmap(imageBitmap);
                             resolve(canvas.convertToBlob());
-                        });
+                        })
+                    });
 
-                    })
-                );
-            }
+                })
+            );
         }
+    }
 
     const images = await Promise.all(imagePromises);
 
@@ -127,6 +133,7 @@ async function getTextFromImagesOnPages(page: pdfjsLib.PDFPageProxy, worker: Tes
         });
     });
     const ocrResults = await Promise.all(ocrResultsPromises);
+    console.log(ocrResults);
 
     return ocrResults;
 }
