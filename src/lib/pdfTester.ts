@@ -1,30 +1,35 @@
 import * as pdfjsLib from "pdfjs-dist";
-import Tesseract, { createWorker, PSM } from 'tesseract.js';
-const { setLogging } = Tesseract;
+import Tesseract, { createWorker, setLogging } from "tesseract.js";
 
 // From react-pdf docs
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-    'pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url
-).toString()
+    "pdfjs-dist/build/pdf.worker.min.mjs",
+    import.meta.url,
+).toString();
 
-export async function checkPDF(pdfLink: string, pageNumber: number, useImages: boolean) {
+export default async function checkPDF(
+    pdfLink: string,
+    pageNumber: number,
+    useImages: boolean,
+) {
+
     const pdf = await pdfjsLib.getDocument(pdfLink).promise;
     const pages = await getPages(pdf);
     return {
         isPageLimit: checkPageLimit(pdf, pageNumber),
         isRightDimensions: await verifyDimensions(pages),
         isClearNumbering: await checkIfClearNumbering(pages, useImages)
-    }
+    };
 }
 
 function getPages(pdf: pdfjsLib.PDFDocumentProxy) {
-    const pagesPromises = []
+    const pagesPromises = [];
 
     for (let i = 1; i <= pdf.numPages; i++) {
         pagesPromises.push(pdf.getPage(i));
     }
 
-    return Promise.all(pagesPromises)
+    return Promise.all(pagesPromises);
 }
 
 function checkPageLimit(pdf: pdfjsLib.PDFDocumentProxy, pageNumber: number) {
@@ -33,7 +38,7 @@ function checkPageLimit(pdf: pdfjsLib.PDFDocumentProxy, pageNumber: number) {
 }
 
 async function verifyDimensions(pages: pdfjsLib.PDFPageProxy[]) {
-    return pages.every(page => {
+    return pages.every((page) => {
         const length = ((page.view[2] - page.view[0]) / 72) * page.userUnit;
         const width = ((page.view[3] - page.view[1]) / 72) * page.userUnit;
 
@@ -42,54 +47,49 @@ async function verifyDimensions(pages: pdfjsLib.PDFPageProxy[]) {
     });
 }
 
-async function checkIfClearNumbering(pages: pdfjsLib.PDFPageProxy[], analyzeImages: boolean) {
-    let worker: Tesseract.Worker;
-    if (analyzeImages) {
-        worker = await createWorker('eng');
-        setLogging(true);
-        worker.setParameters(
-            // Assuming most numbers will just be in a single line
-            { tessedit_pageseg_mode: PSM.SINGLE_LINE }
-        )
-    }
+async function checkIfClearNumbering(
+    pages: pdfjsLib.PDFPageProxy[],
+    analyzeImages: boolean,
+) {
 
     const textValues = await Promise.all(
         pages.map(async (page) => {
-            const textValue = await page.getTextContent().then((textContent) => textContent.items.map((text) => text.str));
+            const textValue = await page
+                .getTextContent()
+                .then((textContent) => textContent.items.map((text) => text.str));
 
-            let imageValue = [];
-            // Definetly need better loading thing
-            if (analyzeImages) {
-                console.log("here");
-                imageValue = await getTextFromImagesOnPages(page, worker);
-                console.log("here 2");
-            }
-            console.log(page.pageNumber);
-            return [...textValue, ...imageValue];
-        })
+            return textValue;
+        }),
     );
 
-    console.log("finished");
-    if (worker) {
-        await worker.terminate();
+
+    let imageValues: string[][];
+    if (analyzeImages) {
+        imageValues = await getTextFromImagesOnPages(pages);
     }
 
-    console.log(textValues)
+
+
+    const mergedValues = textValues.map((textArr, index) => {
+        return [...textArr, ...imageValues[index]];
+    });
+    console.log(mergedValues);
 
     let pageCount = 0;
-    textValues.forEach((textValue) => {
+    mergedValues.forEach((mergedValue) => {
         // Get all numbers on a page into a array
-        const numbers = textValue.flatMap((text) => Number(text) ? Number(text) : []);
+        const numbers = mergedValue.flatMap((value) =>
+            Number(value) ? Number(value) : [],
+        );
         console.log(numbers);
 
         // Check if pages are ordered correctly
         if (numbers.includes(pageCount + 1)) {
             pageCount++;
-        }
-        else {
+        } else {
             pageCount = 1;
         }
-    })
+    });
 
     // Again 2 is for TOC and title
     if (pageCount >= pages.length - 2) {
@@ -99,41 +99,50 @@ async function checkIfClearNumbering(pages: pdfjsLib.PDFPageProxy[], analyzeImag
     return false;
 }
 
-async function getTextFromImagesOnPages(page: pdfjsLib.PDFPageProxy, worker: Tesseract.Worker) {
-    const imagePromises = [];
-    const ops = await page.getOperatorList();
+async function getTextFromImagesOnPages(pages: pdfjsLib.PDFPageProxy[]): Promise<string[][]> {
+    const scheduler = Tesseract.createScheduler();
+    
+    await Promise.all(
+        Array.from({ length: 4 }, async () => {
+            const worker = await Tesseract.createWorker('eng');
+            return scheduler.addWorker(worker);
+        })
+    );
+    const textValues: string[][] = [];
 
-    // This is interesting...(it sucks)
-    for (let i = 0; i < ops.fnArray.length; i++) {
-        if (ops.fnArray[i] === pdfjsLib.OPS.paintImageXObject) {
-            const op = ops.argsArray[i][0];
-            imagePromises.push(
-                new Promise((resolve) => {
-                    page.objs.get(op, (image: any) => {
-                        const canvas = new OffscreenCanvas(image.width, image.height)
-                        const ctx: ImageBitmapRenderingContext = canvas.getContext('bitmaprenderer')!;
-                        createImageBitmap(image.bitmap).then((imageBitmap) => {
-                            ctx.transferFromImageBitmap(imageBitmap);
-                            resolve(canvas.convertToBlob());
-                        })
-                    });
+    for (const page of pages) {
+        const textPromises = [];
+        const ops = await page.getOperatorList();
 
+        for (let i = 0; i < ops.fnArray.length; i++) {
+            if (ops.fnArray[i] === pdfjsLib.OPS.paintImageXObject) {
+                const op = ops.argsArray[i][0];
+
+                // This took a week to find...
+                if (!page.objs.has(op)) continue;
+
+                const image = await new Promise((resolve) =>  {
+                    page.objs.get(op, resolve)
                 })
-            );
+                const canvas = new OffscreenCanvas(image.width, image.height);
+                const ctx: ImageBitmapRenderingContext = canvas.getContext("bitmaprenderer")!;
+                const bitmap = await createImageBitmap(image.bitmap);
+                ctx.transferFromImageBitmap(bitmap);
+                bitmap.close()
+
+                const blob = await canvas.convertToBlob();
+                if (page.pageNumber === 4) {
+                    console.log(URL.createObjectURL(blob));
+                }
+
+
+                textPromises.push(scheduler.addJob('recognize', blob).then((result) => result.data.text));
+            }
+
         }
+        textValues.push(await Promise.all(textPromises));
     }
-
-    const images = await Promise.all(imagePromises);
-
-    const ocrResultsPromises = images.map((image) => {
-        return new Promise((resolve) => {
-            worker.recognize(image).then((ocrResult) => {
-                resolve(ocrResult.data.text);
-            });
-        });
-    });
-    const ocrResults = await Promise.all(ocrResultsPromises);
-    console.log(ocrResults);
-
-    return ocrResults;
+    await scheduler.terminate();
+    return textValues;
 }
+

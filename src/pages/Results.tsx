@@ -1,7 +1,7 @@
 import { useLocation } from "react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useWindowSize } from "react-use";
-import { checkPDF } from "../lib/pdfTester";
+import checkPDF from "../lib/pdfTester";
 import StatusIndicator from "../components/StatusIndicator";
 import Confetti from "react-confetti";
 
@@ -18,14 +18,8 @@ function Results() {
     const state = location.state;
 
     const [results, setResults] = useState<Result | null>(null);
-    const [pdfLink, setPDFLink] = useState(URL.createObjectURL(state.pdf));
+    const pdfLink = useMemo(() => URL.createObjectURL(state.pdf), [state]);
 
-    useEffect(() => {
-        if (state) {
-            const newPdfLink = URL.createObjectURL(state.pdf);
-            setPDFLink(newPdfLink);
-        }
-    }, [state]);
 
     useEffect(() => {
         if (state && pdfLink) {
@@ -37,6 +31,7 @@ function Results() {
             getResults();
         }
     }, [pdfLink, state]);
+
 
     if (!state || !pdfLink) {
         return <p>Error: No PDF provided.</p>;
