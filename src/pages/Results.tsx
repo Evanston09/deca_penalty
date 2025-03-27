@@ -1,7 +1,6 @@
 import { useLocation } from "react-router";
 import { useState, useEffect, useMemo } from "react";
 import { useWindowSize } from "react-use";
-import checkPDF from "../lib/pdfTester";
 import StatusIndicator from "../components/StatusIndicator";
 import Confetti from "react-confetti";
 
@@ -22,15 +21,14 @@ function Results() {
 
 
     useEffect(() => {
-        if (state && pdfLink) {
-            async function getResults() {
-                setResults(
-                    await checkPDF(pdfLink, state.pageNumber, state.useImages),
-                );
-            }
-            getResults();
+        const worker = new Worker(new URL('../lib/pdfTester.ts', import.meta.url), {
+            type: 'module'
+        })
+        worker.postMessage({pdfLink: pdfLink, pageNumber: state.pageNumber, useImages: state.useImages});
+        worker.onmessage = (result) => {
+            setResults(result.data);
         }
-    }, [pdfLink, state]);
+    }, [pdfLink, state])
 
 
     if (!state || !pdfLink) {

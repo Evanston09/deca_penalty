@@ -1,19 +1,27 @@
 import * as pdfjsLib from "pdfjs-dist";
-import Tesseract, { createWorker, setLogging } from "tesseract.js";
+import Tesseract, { setLogging } from "tesseract.js";
 
-// From react-pdf docs
+// Dont need since already in Web Worker context... At least i think
+// https://github.com/mozilla/pdf.js/discussions/17276
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-    "pdfjs-dist/build/pdf.worker.min.mjs",
-    import.meta.url,
+  'pdfjs-dist/build/pdf.worker.min.mjs',
+  import.meta.url,
 ).toString();
 
-export default async function checkPDF(
+
+onmessage = async (parameters) => {
+    const results = await checkPDF(parameters.data.pdfLink, parameters.data.pageNumber, parameters.data.useImages)
+    postMessage(results);
+}
+
+async function checkPDF(
     pdfLink: string,
     pageNumber: number,
     useImages: boolean,
 ) {
-
-    const pdf = await pdfjsLib.getDocument(pdfLink).promise;
+    const pdf = await pdfjsLib.getDocument(pdfLink).promise
+    console.log("after get doc")
+    console.log(pdfjsLib.GlobalWorkerOptions.workerSrc);
     const pages = await getPages(pdf);
     return {
         isPageLimit: checkPageLimit(pdf, pageNumber),
@@ -63,7 +71,7 @@ async function checkIfClearNumbering(
     );
 
 
-    let imageValues: string[][];
+    let imageValues = new Array(pages.length).fill([]);
     if (analyzeImages) {
         imageValues = await getTextFromImagesOnPages(pages);
     }
@@ -101,7 +109,8 @@ async function checkIfClearNumbering(
 
 async function getTextFromImagesOnPages(pages: pdfjsLib.PDFPageProxy[]): Promise<string[][]> {
     const scheduler = Tesseract.createScheduler();
-    
+    setLogging(true);
+
     await Promise.all(
         Array.from({ length: 4 }, async () => {
             const worker = await Tesseract.createWorker('eng');
@@ -131,10 +140,6 @@ async function getTextFromImagesOnPages(pages: pdfjsLib.PDFPageProxy[]): Promise
                 bitmap.close()
 
                 const blob = await canvas.convertToBlob();
-                if (page.pageNumber === 4) {
-                    console.log(URL.createObjectURL(blob));
-                }
-
 
                 textPromises.push(scheduler.addJob('recognize', blob).then((result) => result.data.text));
             }
