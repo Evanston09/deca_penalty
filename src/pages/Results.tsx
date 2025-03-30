@@ -21,7 +21,7 @@ function Results() {
 
 
     useEffect(() => {
-        const worker = new Worker(new URL('../lib/pdfTester.ts', import.meta.url), {
+        const worker = new Worker(new URL('../lib/pdfWorker.ts', import.meta.url), {
             type: 'module'
         })
         worker.postMessage({pdfLink: pdfLink, pageNumber: state.pageNumber, useImages: state.useImages});
