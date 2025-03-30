@@ -1,4 +1,5 @@
 import { useLocation } from "react-router";
+import { checkPDF } from "../lib/pdfChecker";
 import { useState, useEffect, useMemo } from "react";
 import { useWindowSize } from "react-use";
 import StatusIndicator from "../components/StatusIndicator";
@@ -19,14 +20,12 @@ function Results() {
     const [results, setResults] = useState<Result | null>(null);
     const pdfLink = useMemo(() => URL.createObjectURL(state.pdf), [state]);
 
-
     useEffect(() => {
-        const worker = new Worker(new URL('../lib/pdfWorker.ts', import.meta.url), {
-            type: 'module'
-        })
-        worker.postMessage({pdfLink: pdfLink, pageNumber: state.pageNumber, useImages: state.useImages});
-        worker.onmessage = (result) => {
-            setResults(result.data);
+        const fetchResults = async () => {
+            setResults(await checkPDF(pdfLink, state.pageNumber, state.useImages))
+        };
+        if (pdfLink && state) {
+            fetchResults();
         }
     }, [pdfLink, state])
 

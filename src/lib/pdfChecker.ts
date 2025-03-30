@@ -1,34 +1,18 @@
 import * as pdfjsLib from "pdfjs-dist";
-import Tesseract from "tesseract.js";
+import Tesseract, { setLogging } from "tesseract.js";
 
-pdfjsLib.GlobalWorkerOptions.workerPort = new Worker(new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url), {type: 'module'});
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.mjs',
+  import.meta.url,
+).toString();
 
-onmessage = async (parameters) => {
-    const data = parameters.data
-    const results = await checkPDF(data.pdfLink, data.pageNumber, data.useImages)
-    postMessage(results);
-}
-
-async function checkPDF(
+export async function checkPDF(
     pdfLink: string,
     pageNumber: number,
     useImages: boolean,
 ) {
-    // Some kinda janky stuff to get page rendering to work 
-    const document = {
-        fonts: self.fonts,
-        createElement: (name: string) => {
-            if (name == 'canvas') {
-                return new OffscreenCanvas(1, 1);
-            }
-            return null;
-        },
-    };
-
     const pdf = await pdfjsLib.getDocument({ 
-        url: new URL(pdfLink),
-        useSystemFonts: true, 
-        ownerDocument: document,
+        url: pdfLink,
     }).promise;
 
     const pages = await getPages(pdf);
@@ -96,14 +80,14 @@ async function checkIfClearNumbering(
             const number = value.match(/\d+/g);
             return number ? number.map(Number) : []
         });
-        console.log(numbers);
-
+        
         // Check if pages are ordered correctly
         if (numbers.includes(pageCount + 1)) {
             pageCount++;
         } else {
             pageCount = 1;
         }
+        console.log(pageCount);
     });
 
     // Again 2 is for TOC and title
@@ -118,7 +102,6 @@ async function convertPageToImage(page: pdfjsLib.PDFPageProxy) {
     const viewport = page.getViewport({scale: 1});
     const canvas = new OffscreenCanvas(viewport.width, viewport.height);
     const ctx = canvas.getContext("2d")!;
-    console.log("before render")
     await page.render({canvasContext: ctx, viewport: viewport}).promise;
 
     return canvas.convertToBlob();
@@ -126,6 +109,7 @@ async function convertPageToImage(page: pdfjsLib.PDFPageProxy) {
 
 async function getTextFromImagizedPages(pages: pdfjsLib.PDFPageProxy[]) {
     const scheduler = Tesseract.createScheduler();
+    setLogging(true);
 
     const workerGen = async () => {
         const worker = await Tesseract.createWorker('eng');
@@ -140,13 +124,15 @@ async function getTextFromImagizedPages(pages: pdfjsLib.PDFPageProxy[]) {
     await Promise.all(resArr);
 
     const images = await Promise.all(pages.map(convertPageToImage));
+    images.forEach((image) => {
+        console.log(URL.createObjectURL(image));
+    })
 
     const textPromises = images.map(image => 
         scheduler.addJob('recognize', image).then(result => result.data.text)
     );
 
     const textResults = await Promise.all(textPromises);
-    console.log(textResults[4]);
 
     await scheduler.terminate()
 

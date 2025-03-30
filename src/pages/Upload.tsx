@@ -17,7 +17,7 @@ function Upload() {
         }
     }, [setPDFUpload, setPDFError]);
 
-    const {getRootProps, getInputProps, isDragActive} = useDropzone({
+    const {getRootProps, getInputProps, fileRejections, isDragActive} = useDropzone({
         onDrop,
         accept: {
             'application/pdf': ['.pdf']
@@ -63,11 +63,15 @@ function Upload() {
                         }
 
                     </div>
-                     {
+                    {
                         pdfError  && (
-                        <p className='text-red-500'>No PDF Uploaded</p>
+                            <p className='text-red-500'>No PDF Uploaded</p>
                         )
                     }
+                    {fileRejections.length > 0 && (
+                        <p className='text-red-500'>{fileRejections[0].errors[0].message}</p>
+                        
+                    )}
                 </div>
 
                 <div className='text-sm md:text-base flex flex-col gap-1'>
