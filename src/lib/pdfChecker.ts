@@ -1,4 +1,5 @@
 import * as pdfjsLib from "pdfjs-dist";
+import { TextItem } from "pdfjs-dist/types/src/display/api";
 import Tesseract, { setLogging } from "tesseract.js";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
@@ -55,9 +56,11 @@ async function checkIfClearNumbering(
 ) {
   const textValues = await Promise.all(
     pages.map(async (page) => {
+      // We are sure it is only TextItem bc according to docs
+      // TextMarkedContent items are included when includeMarkedContent is true.
       const textValue = await page
         .getTextContent()
-        .then((textContent) => textContent.items.map((text) => text.str));
+        .then((textContent) => textContent.items.map((text) => (text as TextItem).str));
 
       return textValue;
     }),
@@ -101,7 +104,8 @@ async function convertPageToImage(page: pdfjsLib.PDFPageProxy) {
   const viewport = page.getViewport({ scale: 1 });
   const canvas = new OffscreenCanvas(viewport.width, viewport.height);
   const ctx = canvas.getContext("2d")!;
-  await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+  // CTX similar enough and pdfjs does not use any Canvas specific features not in OffscreenCanvas
+  await page.render({ canvasContext: (ctx as unknown as CanvasRenderingContext2D), viewport: viewport }).promise;
 
   return canvas.convertToBlob();
 }

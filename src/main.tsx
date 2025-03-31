@@ -5,6 +5,9 @@ import Upload from "./pages/Upload.tsx";
 import Results from "./pages/Results.tsx";
 import Layout from "./layout/Layout.tsx";
 import "./index.css";
+
+// https://github.com/fontsource/fontsource/issues/1038
+// @ts-expect-error This is an active issue will look into it
 import "@fontsource-variable/montserrat";
 
 createRoot(document.getElementById("root")!).render(
