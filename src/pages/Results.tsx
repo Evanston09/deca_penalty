@@ -35,11 +35,11 @@ function Results() {
 
   return (
     <>
-      <h1 className="text-2xl md:text-5xl font-semibold mb-8">
+      <h1 className="text-2xl md:text-5xl font-semibold mb-4">
         Written Event Penalty Checker
       </h1>
 
-      <iframe src={pdfLink} className="h-164 max-w-lg w-full mb-8" />
+      <iframe src={pdfLink} className="h-164 max-w-lg w-full mb-4" />
       {results ? (
         <div className="space-y-1">
           {Object.values(results).every((item) => item === true) &&
@@ -67,6 +67,7 @@ function Results() {
             isDone={state.isIntegrityDone}
             text="Written Statement of Assurances and Academic Integrity Completed"
           />
+          <p className="text-xs text-zinc-500">*May be inaccurate</p>
         </div>
       ) : (
         <p>Loading results...</p>

@@ -46,19 +46,21 @@ function Upload() {
 
   return (
     <>
-      <h1 className="text-2xl md:text-5xl font-semibold mb-8">
+      <h1 className="text-2xl md:text-5xl font-semibold mb-4">
         Written Event Penalty Checker
       </h1>
 
-      <form action={submit} className="flex flex-col gap-4">
+      <form action={submit} className="flex flex-col gap-4 max-w-full">
         <div>
           <div
-            className="text-sm md:text-lg p-4 h-64 w-full flex items-center justify-center border-1 border-gray-200 border-dashed rounded-lg"
+            className="text-lg p-4 h-64 flex items-center justify-center border-1 border-zinc-200 border-dashed rounded-lg"
             {...getRootProps()}
           >
             <input {...getInputProps()} />
             {pdfUpload ? (
-              <p className="underline">{pdfUpload.name}</p>
+              <p className="underline overflow-hidden text-ellipsis">
+                {pdfUpload.name}
+              </p>
             ) : isDragActive ? (
               <p>Drop the file here ...</p>
             ) : (
@@ -111,7 +113,7 @@ function Upload() {
           </label>
         </div>
 
-        <button className="text-sm md:text-base font-semibold w-full bg-deca-blue hover:bg-deca-blue-hover p-4 rounded-lg">
+        <button className="text-base md:text-lg font-semibold w-full bg-deca-blue hover:bg-deca-blue-hover p-4 rounded-lg">
           Check Written Event!
         </button>
       </form>
