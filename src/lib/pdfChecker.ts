@@ -60,7 +60,9 @@ async function checkIfClearNumbering(
       // TextMarkedContent items are included when includeMarkedContent is true.
       const textValue = await page
         .getTextContent()
-        .then((textContent) => textContent.items.map((text) => (text as TextItem).str));
+        .then((textContent) =>
+          textContent.items.map((text) => (text as TextItem).str),
+        );
 
       return textValue;
     }),
@@ -105,7 +107,10 @@ async function convertPageToImage(page: pdfjsLib.PDFPageProxy) {
   const canvas = new OffscreenCanvas(viewport.width, viewport.height);
   const ctx = canvas.getContext("2d")!;
   // CTX similar enough and pdfjs does not use any Canvas specific features not in OffscreenCanvas
-  await page.render({ canvasContext: (ctx as unknown as CanvasRenderingContext2D), viewport: viewport }).promise;
+  await page.render({
+    canvasContext: ctx as unknown as CanvasRenderingContext2D,
+    viewport: viewport,
+  }).promise;
 
   return canvas.convertToBlob();
 }
