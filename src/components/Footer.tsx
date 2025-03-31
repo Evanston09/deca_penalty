@@ -11,7 +11,7 @@ function Footer() {
       <p className="text-xs text-zinc-400">
         Your event is processed entirely on the client—nothing is uploaded or
         shared! :) See the{" "}
-        <a href="https://github.com" className="text-deca-blue hover:underline">
+        <a href="https://github.com/Evanston09/deca_penalty" className="text-deca-blue hover:underline">
           source code
         </a>
         .
