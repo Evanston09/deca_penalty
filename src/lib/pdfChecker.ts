@@ -1,6 +1,6 @@
 import * as pdfjsLib from "pdfjs-dist";
 import { TextItem } from "pdfjs-dist/types/src/display/api";
-import Tesseract, { setLogging } from "tesseract.js";
+import Tesseract from "tesseract.js";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
@@ -91,7 +91,6 @@ async function checkIfClearNumbering(
     } else {
       pageCount = 1;
     }
-    console.log(pageCount);
   });
 
   // Again 2 is for TOC and title
@@ -117,8 +116,7 @@ async function convertPageToImage(page: pdfjsLib.PDFPageProxy) {
 
 async function getTextFromImagizedPages(pages: pdfjsLib.PDFPageProxy[]) {
   const scheduler = Tesseract.createScheduler();
-  setLogging(true);
-
+  
   const workerGen = async () => {
     const worker = await Tesseract.createWorker("eng");
     scheduler.addWorker(worker);
@@ -132,10 +130,7 @@ async function getTextFromImagizedPages(pages: pdfjsLib.PDFPageProxy[]) {
   await Promise.all(resArr);
 
   const images = await Promise.all(pages.map(convertPageToImage));
-  images.forEach((image) => {
-    console.log(URL.createObjectURL(image));
-  });
-
+  
   const textPromises = images.map((image) =>
     scheduler.addJob("recognize", image).then((result) => result.data.text),
   );
