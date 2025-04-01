@@ -43,10 +43,12 @@ function Results() {
         width: document.body.clientWidth,
       });
     }
+
+    handleResize();
     window.addEventListener("resize", handleResize);
 
     return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  }, [results]);
 
   if (!state || !pdfLink) {
     return <Error message="No PDF File!" />;
