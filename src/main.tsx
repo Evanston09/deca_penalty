@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router";
 import Upload from "./pages/Upload.tsx";
 import Results from "./pages/Results.tsx";
+import Error from "./pages/Error.tsx";
 import Layout from "./layout/Layout.tsx";
 import "./index.css";
 
@@ -17,6 +18,7 @@ createRoot(document.getElementById("root")!).render(
         <Route path="/" element={<Layout />}>
           <Route index element={<Upload />} />
           <Route path="/results" element={<Results />} />
+          <Route path="*" element={<Error message="404 Error!" />} />
         </Route>
       </Routes>
     </BrowserRouter>

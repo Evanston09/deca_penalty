@@ -3,6 +3,7 @@ import { checkPDF } from "../lib/pdfChecker";
 import { useState, useEffect, useMemo } from "react";
 import StatusIndicator from "../components/StatusIndicator";
 import Confetti from "react-confetti";
+import Error from "./Error.tsx";
 
 function Results() {
   type Result = {
@@ -20,13 +21,17 @@ function Results() {
   const state = location.state;
 
   const [results, setResults] = useState<Result | null>(null);
-  const pdfLink = useMemo(() => URL.createObjectURL(state.pdf), [state]);
+  const pdfLink = useMemo(() => {
+    if (state) {
+      return URL.createObjectURL(state.pdf);
+    }
+  }, [state]);
 
   useEffect(() => {
-    const fetchResults = async () => {
-      setResults(await checkPDF(pdfLink, state.pageNumber, state.useImages));
-    };
     if (pdfLink && state) {
+      const fetchResults = async () => {
+        setResults(await checkPDF(pdfLink, state.pageNumber, state.useImages));
+      };
       fetchResults();
     }
   }, [pdfLink, state]);
@@ -44,7 +49,7 @@ function Results() {
   }, []);
 
   if (!state || !pdfLink) {
-    return <p>Error: No PDF provided.</p>;
+    return <Error message="No PDF File!" />;
   }
 
   return (
@@ -65,7 +70,7 @@ function Results() {
         Written Event Penalty Checker
       </h1>
 
-      <iframe src={pdfLink} className="h-164 max-w-lg w-full mb-4" />
+      <iframe src={pdfLink} className="h-120 md:h-164 max-w-lg w-full mb-4" />
       {results ? (
         <div className="space-y-1">
           <StatusIndicator
