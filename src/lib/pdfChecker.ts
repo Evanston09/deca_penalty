@@ -116,7 +116,7 @@ async function convertPageToImage(page: pdfjsLib.PDFPageProxy) {
 
 async function getTextFromImagizedPages(pages: pdfjsLib.PDFPageProxy[]) {
   const scheduler = Tesseract.createScheduler();
-  
+
   const workerGen = async () => {
     const worker = await Tesseract.createWorker("eng");
     scheduler.addWorker(worker);
@@ -130,7 +130,7 @@ async function getTextFromImagizedPages(pages: pdfjsLib.PDFPageProxy[]) {
   await Promise.all(resArr);
 
   const images = await Promise.all(pages.map(convertPageToImage));
-  
+
   const textPromises = images.map((image) =>
     scheduler.addJob("recognize", image).then((result) => result.data.text),
   );
