@@ -84,7 +84,7 @@ function Upload() {
               onChange={(e) => setIntegrityDone(e.target.checked)}
               type="checkbox"
               name="integrity"
-              className="ml-2"
+              className="ml-2 accent-deca-blue"
             />
           </label>
           <label>
@@ -95,7 +95,7 @@ function Upload() {
               onChange={(e) => setUseImages(e.target.checked)}
               type="checkbox"
               name="integrity"
-              className="ml-2"
+              className="ml-2 accent-deca-blue"
             />
           </label>
 
@@ -107,8 +107,8 @@ function Upload() {
               name="pages"
               className="ml-2"
             >
-              <option value="10">10</option>
-              <option value="20">20</option>
+              <option className='text-black' value="10">10</option>
+              <option className='text-black' value="20">20</option>
             </select>
           </label>
         </div>
