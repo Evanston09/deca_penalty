@@ -11,17 +11,34 @@ export async function checkPDF(
   pdfLink: string,
   pageNumber: number,
   useImages: boolean,
+  onProgress: (status: string, progress: number) => void,
 ) {
+  onProgress("Parsing PDF", 0.1);
   const pdf = await pdfjsLib.getDocument({
     url: pdfLink,
   }).promise;
 
   const pages = await getPages(pdf);
 
+  onProgress("Checking If Within Page Limit", 0.2);
+  const isPageLimit = checkPageLimit(pdf, pageNumber);
+
+  onProgress("Verifying Dimensions", 0.3);
+  const isRightDimensions = await verifyDimensions(pages);
+
+  onProgress("Verifying Numbering", 0.4);
+  const isClearNumbering = await checkIfClearNumbering(
+    pages,
+    useImages,
+    onProgress,
+  );
+
+  onProgress("Finished", 1);
+
   return {
-    isPageLimit: checkPageLimit(pdf, pageNumber),
-    isRightDimensions: await verifyDimensions(pages),
-    isClearNumbering: await checkIfClearNumbering(pages, useImages),
+    isPageLimit: isPageLimit,
+    isRightDimensions: isRightDimensions,
+    isClearNumbering: isClearNumbering,
   };
 }
 
@@ -53,7 +70,9 @@ async function verifyDimensions(pages: pdfjsLib.PDFPageProxy[]) {
 async function checkIfClearNumbering(
   pages: pdfjsLib.PDFPageProxy[],
   analyzeImages: boolean,
+  onProgress: (status: string, progress: number) => void,
 ) {
+  onProgress("Getting Text From PDF", 0.5);
   const textValues = await Promise.all(
     pages.map(async (page) => {
       // We are sure it is only TextItem bc according to docs
@@ -70,9 +89,11 @@ async function checkIfClearNumbering(
 
   let imageValues = new Array(pages.length).fill("");
   if (analyzeImages) {
-    imageValues = await getTextFromImagizedPages(pages);
+    onProgress("Processing PDF as Images", 0.6);
+    imageValues = await getTextFromImagizedPages(pages, onProgress);
   }
 
+  onProgress("Calculating Numbering", 0.9);
   const mergedValues = textValues.map((textArr, index) => {
     return [...textArr, imageValues[index]];
   });
@@ -114,7 +135,11 @@ async function convertPageToImage(page: pdfjsLib.PDFPageProxy) {
   return canvas.convertToBlob();
 }
 
-async function getTextFromImagizedPages(pages: pdfjsLib.PDFPageProxy[]) {
+async function getTextFromImagizedPages(
+  pages: pdfjsLib.PDFPageProxy[],
+  onProgress: (status: string, progress: number) => void,
+) {
+  onProgress("Instanciating Tesseract Workers", 0.6);
   const scheduler = Tesseract.createScheduler();
 
   const workerGen = async () => {
@@ -129,14 +154,17 @@ async function getTextFromImagizedPages(pages: pdfjsLib.PDFPageProxy[]) {
   }
   await Promise.all(resArr);
 
+  onProgress("Converting Pages to Images", 0.65);
   const images = await Promise.all(pages.map(convertPageToImage));
 
   const textPromises = images.map((image) =>
     scheduler.addJob("recognize", image).then((result) => result.data.text),
   );
 
+  onProgress("Get Text From Images (May take a while)", 0.75);
   const textResults = await Promise.all(textPromises);
 
+  onProgress("Cleaning Up Tesseract", 0.8);
   await scheduler.terminate();
 
   return textResults;

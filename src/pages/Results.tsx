@@ -21,6 +21,11 @@ function Results() {
   const state = location.state;
 
   const [results, setResults] = useState<Result | null>(null);
+  const [progress, setProgress] = useState<{
+    status: string;
+    progress: number;
+  }>({ status: "Initializing", progress: 0 });
+
   const pdfLink = useMemo(() => {
     if (state) {
       return URL.createObjectURL(state.pdf);
@@ -30,7 +35,14 @@ function Results() {
   useEffect(() => {
     if (pdfLink && state) {
       const fetchResults = async () => {
-        setResults(await checkPDF(pdfLink, state.pageNumber, state.useImages));
+        setResults(
+          await checkPDF(
+            pdfLink,
+            state.pageNumber,
+            state.useImages,
+            (status, progress) => setProgress({ status, progress }),
+          ),
+        );
       };
       fetchResults();
     }
@@ -94,7 +106,16 @@ function Results() {
           <p className="text-xs text-zinc-500">*May be inaccurate</p>
         </div>
       ) : (
-        <p>Loading results...</p>
+        <>
+          <p>{progress.status}</p>
+          <progress
+            className="[&::-webkit-progress-value]:bg-deca-blue [&::-moz-progress-bar]:bg-deca-blue rounded-lg h-2 max-w-lg w-full"
+            max="1"
+            value={progress.progress}
+          >
+            {progress.progress}
+          </progress>
+        </>
       )}
     </>
   );
