@@ -107,8 +107,12 @@ function Upload() {
               name="pages"
               className="ml-2"
             >
-              <option className='text-black' value="10">10</option>
-              <option className='text-black' value="20">20</option>
+              <option className="text-black" value="10">
+                10
+              </option>
+              <option className="text-black" value="20">
+                20
+              </option>
             </select>
           </label>
         </div>
