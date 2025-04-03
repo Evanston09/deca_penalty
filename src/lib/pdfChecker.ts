@@ -99,7 +99,8 @@ async function checkIfClearNumbering(
   });
 
   let pageCount = 0;
-  mergedValues.forEach((mergedValue) => {
+  // Slice avoids first 2 pages being counted(Title and TOC)
+  mergedValues.slice(2).forEach((mergedValue) => {
     // Get all numbers on a page into a array
     const numbers = mergedValue.flatMap((value) => {
       const number = value.match(/\d+/g);
