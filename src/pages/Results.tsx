@@ -1,9 +1,10 @@
-import { useLocation } from "react-router";
+import { Link, useLocation } from "react-router";
 import { checkPDF } from "../lib/pdfChecker";
 import { useState, useEffect, useMemo } from "react";
 import StatusIndicator from "../components/StatusIndicator";
 import Confetti from "react-confetti";
 import Error from "./Error.tsx";
+import { MoveLeft } from "lucide-react";
 
 function Results() {
   type Result = {
@@ -68,6 +69,11 @@ function Results() {
 
   return (
     <>
+      <div className='flex flex-row gap-2 items-center mr-auto hover:underline mb-4'>
+        <MoveLeft />
+        <Link to="/">Go Home</Link>
+      </div>
+      
       {results &&
         Object.values(results).every((item) => item === true) &&
         state.isIntegrityDone && (
