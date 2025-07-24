@@ -47,7 +47,7 @@ function Upload() {
   return (
     <>
       <h1 className="text-2xl md:text-5xl font-semibold mb-4">
-        Written Event Penalty Checker
+        Prepared Event Penalty Checker
       </h1>
 
       <form action={submit} className="flex flex-col gap-4 max-w-full">
@@ -118,7 +118,7 @@ function Upload() {
         </div>
 
         <button className="text-base md:text-lg font-semibold w-full bg-deca-blue hover:bg-deca-blue-hover p-4 rounded-lg">
-          Check Written Event!
+          Check Prepared Event!
         </button>
       </form>
     </>

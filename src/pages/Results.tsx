@@ -87,7 +87,7 @@ function Results() {
         )}
 
       <h1 className="text-2xl md:text-5xl font-semibold mb-4">
-        Written Event Penalty Checker
+        Prepared Event Penalty Checker
       </h1>
 
       <iframe src={pdfLink} className="h-120 md:h-164 max-w-lg w-full mb-4" />
@@ -103,7 +103,7 @@ function Results() {
           />
           <StatusIndicator
             isDone={results.isRightDimensions}
-            text='Written Event fits within the required dimensions (8.5" x 11")'
+            text='Prepared Event fits within the required dimensions (8.5" x 11")'
           />
           <StatusIndicator
             isDone={state.isIntegrityDone}
