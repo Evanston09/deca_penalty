@@ -18,7 +18,7 @@ createRoot(document.getElementById("root")!).render(
         <Route path="/" element={<Layout />}>
           <Route index element={<Upload />} />
           <Route path="/results" element={<Results />} />
-          <Route path="*" element={<Error message="404 Error!" />} />
+          <Route path="*" element={<Error message="404 Page Not Found!" />} />
         </Route>
       </Routes>
     </BrowserRouter>

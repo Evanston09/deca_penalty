@@ -1,5 +1,6 @@
-import { Outlet } from "react-router";
+import { Outlet, Link } from "react-router";
 import Footer from "../components/Footer.tsx";
+import { ScrollText } from "lucide-react";
 
 function Layout() {
   return (
