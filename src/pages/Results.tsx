@@ -1,10 +1,12 @@
 import { Link, useLocation } from "react-router";
-import { checkPDF } from "../lib/pdfChecker";
+import { checkPDF } from "../lib/pdfChecker.ts";
 import { useState, useEffect, useMemo } from "react";
 import StatusIndicator from "../components/StatusIndicator";
 import Confetti from "react-confetti";
 import Error from "./Error.tsx";
 import { MoveLeft } from "lucide-react";
+import { EventFormat } from "../lib/validators/ValidatorTypes.ts";
+import { DECA_EVENTS_OBJECT } from "../lib/decaEvents.ts";
 
 function Results() {
   type Result = {
@@ -37,17 +39,22 @@ function Results() {
     if (pdfLink && state) {
       const fetchResults = async () => {
         setResults(
-          await checkPDF(
+          await checkPDF({
             pdfLink,
-            state.pageNumber,
-            state.useImages,
-            (status, progress) => setProgress({ status, progress }),
-          ),
+            pageNumber: state.pageNumber,
+            useImage: state.useImages,
+            eventType: EventFormat.Pitch
+        }),
         );
       };
       fetchResults();
     }
-  }, [pdfLink, state]);
+  }, []);
+  
+  // useEffect(() => {
+  //       const pdfWorker = new Worker(new URL("../lib/pdfChecker.ts", import.meta.url), {type: "module"});
+  //       pdfWorker.postMessage({pdfLink, pageNumber: state.pageNumber, useImages: state.useImages, eventType: EventFormat.Pitch})
+  //   });
 
   useEffect(() => {
     function handleResize() {

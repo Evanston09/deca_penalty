@@ -1,4 +1,4 @@
-import { EventFormat, DecaEvent } from "./validation/validators/ValidatorTypes";
+import { EventFormat, DecaEvent } from "./validators/ValidatorTypes";
 const PROJECT_MANAGEMENT_SECTIONS = [
   "Executive Summary",
   "Initiating",

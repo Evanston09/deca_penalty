@@ -3,16 +3,20 @@ import * as pdfjsLib from "pdfjs-dist";
 export type PDFParams = {
   pdf: pdfjsLib.PDFDocumentProxy;
   pages: pdfjsLib.PDFPageProxy[];
-  pageNumber: number;
   analyzeImages: boolean;
   textResults: TextResult[];
   event: DecaEvent;
 };
 
+export type UserParams = {
+  pdfLink: string;
+  pageNumber: number;
+  useImage: boolean;
+  eventType: EventFormat;
+};
 export type StructureConfig = {
   maxPages: number;
-  dimensions: { height: number; width: number; useDpi: boolean | undefined };
-
+  dimensions: { length: number; width: number; useDpi: boolean };
   pageIndexes: {
     titleIndex: number;
     tocIndex: number;
@@ -29,10 +33,6 @@ export interface StructureValidationRule {
   name: string;
   validate(pdfParams: PDFParams): Promise<StructureValidationResult>;
 }
-
-export type TextParams = {
-  pages: pdfjsLib.PDFPageProxy[];
-};
 
 export type TextBBox = {
   top: number;
@@ -53,7 +53,7 @@ export type TextBlockSearchResult =
   | { found: true; targetText: string; matchingBlocks: TextObject[] };
 
 export interface TextExtractor {
-  extractText(textParams: TextParams): Promise<TextResult[]>;
+  extractText(pages: pdfjsLib.PDFPageProxy[]): Promise<TextResult[]>;
 }
 
 export enum EventFormat {

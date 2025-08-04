@@ -1,16 +1,16 @@
 import {
   TextExtractor,
-  TextParams,
   TextResult,
 } from "./ValidatorTypes";
 import Tesseract from "tesseract.js";
 import { PDFPageProxy } from "pdfjs-dist";
 import { TextItem } from "pdfjs-dist/types/src/display/api";
+import * as pdfjsLib from "pdfjs-dist";
 
 export class PdfJsTextExtractor implements TextExtractor {
-  async extractText(textParams: TextParams) {
+  async extractText(pages: pdfjsLib.PDFPageProxy[]) {
     const textResult: TextResult[] = await Promise.all(
-      textParams.pages.map(async (page) => {
+      pages.map(async (page) => {
         let pageTexts: string[] = [];
         const textContent = await page.getTextContent();
         // We are sure it is only TextItem bc according to docs
@@ -54,7 +54,7 @@ export class PdfJsTextExtractor implements TextExtractor {
 }
 
 export class TesseractTextExtractor implements TextExtractor {
-  async extractText(textParams: TextParams) {
+  async extractText(pages: pdfjsLib.PDFPageProxy[]) {
     const scheduler = Tesseract.createScheduler();
 
     const workerGen = async () => {
@@ -70,7 +70,7 @@ export class TesseractTextExtractor implements TextExtractor {
     await Promise.all(resArr);
 
     const images = await Promise.all(
-      textParams.pages.map(this.convertPageToImage),
+      pages.map(this.convertPageToImage),
     );
 
     const textPromises = images.map(async (image) => {
