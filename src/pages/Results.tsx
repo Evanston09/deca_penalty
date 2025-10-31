@@ -1,20 +1,15 @@
 import { Link, useLocation } from "react-router";
 import { checkPDF } from "../lib/pdfChecker.ts";
 import { useState, useEffect, useMemo } from "react";
-import StatusIndicator from "../components/StatusIndicator";
+import {PagePreview} from "@/components/PagePreview";
 import Confetti from "react-confetti";
 import Error from "./Error.tsx";
 import { MoveLeft } from "lucide-react";
-import { EventFormat } from "../lib/validators/ValidatorTypes.ts";
-import { DECA_EVENTS_OBJECT } from "../lib/decaEvents.ts";
+import GagueChart from "../components/GaugeChart.tsx";
+import ResultSummary from "../components/ResultSummary.tsx";
+import {Result} from"../lib/ValidatorTypes.ts";
 
 function Results() {
-  type Result = {
-    isPageLimit: boolean;
-    isRightDimensions: boolean;
-    isClearNumbering: boolean;
-  };
-
   const location = useLocation();
   const [windowSize, setWindowSize] = useState({
     height: document.body.scrollHeight,
@@ -43,19 +38,15 @@ function Results() {
             pdfLink,
             pageNumber: state.pageNumber,
             useImage: state.useImages,
-            eventType: EventFormat.Pitch
+            event: state.event
         }),
         );
       };
       fetchResults();
     }
-  }, []);
+  }, []); 
+  console.log(results)
   
-  // useEffect(() => {
-  //       const pdfWorker = new Worker(new URL("../lib/pdfChecker.ts", import.meta.url), {type: "module"});
-  //       pdfWorker.postMessage({pdfLink, pageNumber: state.pageNumber, useImages: state.useImages, eventType: EventFormat.Pitch})
-  //   });
-
   useEffect(() => {
     function handleResize() {
       setWindowSize({
@@ -93,45 +84,91 @@ function Results() {
           />
         )}
 
-      <h1 className="text-2xl md:text-5xl font-semibold mb-4">
+      <h1 className="text-2xl md:text-5xl font-semibold">
         Prepared Event Penalty Checker
       </h1>
+            <GagueChart percentage={results?.score}/>
+            <div className="w-full max-w-4xl p-6 rounded-xl border space-y-2">
+                <h2 className="text-xl font-semibold mb-4">Submission Checklist</h2>
+                <ResultSummary isDone={results?.isPageLimit.isValid} text={"Within max number of pages"}>
+                    {results && (
+                        <div className="space-y-3">
+                            <h3 className="font-semibold text-gray-200 text-base">
+                                This event accepts a max of {results.isPageLimit.expectedPages} pages
+                            </h3>
+                            <p>
+                                Your submission contains {results.isPageLimit.actualPages} pages
+                            </p>
+                        </div>
+                    )}
 
-      <iframe src={pdfLink} className="h-120 md:h-164 max-w-lg w-full mb-4" />
-      {results ? (
-        <div className="space-y-1">
-          <StatusIndicator
-            isDone={results.isClearNumbering}
-            text="All pages are numbered consecutively (ensure no blank pages in between)"
-          />
-          <StatusIndicator
-            isDone={results.isPageLimit}
-            text="Within max number of pages including Table of Contents and Title page"
-          />
-          <StatusIndicator
-            isDone={results.isRightDimensions}
-            text='Prepared Event fits within the required dimensions (8.5" x 11")'
-          />
-          <StatusIndicator
-            isDone={state.isIntegrityDone}
-            text="Written Statement of Assurances and Academic Integrity Completed"
-          />
-          <p className="text-xs text-zinc-500">*May be inaccurate</p>
-        </div>
-      ) : (
-        <>
-          <p>{progress.status}</p>
-          <progress
-            className="[&::-webkit-progress-value]:bg-deca-blue [&::-moz-progress-bar]:bg-deca-blue rounded-lg h-2 max-w-lg w-full"
-            max="1"
-            value={progress.progress}
-          >
-            {progress.progress}
-          </progress>
+                </ResultSummary>
+                <ResultSummary
+                    isDone={results?.isRightDimensions.isValid}
+                    text="Prepared event fits in the required dimensions"
+                >
+                    {results && (
+                        <div className="space-y-3">
+                            <h3 className="font-semibold text-gray-200 text-base">
+                                This event requires a size of{" "}
+                                {results.isRightDimensions.expectedWidth} × {results.isRightDimensions.expectedHeight}
+                                {" "}{results.isRightDimensions.inches ? "inches" : "pixels"}
+                            </h3>
+
+                            <div className="space-y-1">
+                                {results.isRightDimensions.isValid ? (
+                                    <p>
+                                        All of your pages are {results.isRightDimensions.expectedWidth} ×{" "}
+                                        {results.isRightDimensions.expectedHeight}!
+                                    </p>
+                                ) : (
+                                        results.isRightDimensions.invalidPages
+                                        .map((page) => (
+                                            <p key={page.pageNumber} className="text-red-400">
+                                                Page {page.pageNumber} has a size of {page.width} × {page.height}
+                                            </p>
+                                        ))
+                                    )}
+
+
+                            </div>
+                        </div>
+                    )}
+                </ResultSummary>
+                <ResultSummary
+                    isDone={results?.isProperStructure.isValid}
+                    text="Prepared event follows the required structure"
+                >
+                    {results && (
+                        <div className="space-y-3">
+                            <div>
+                            <h3 className="font-semibold text-gray-200 text-base">
+                                This event requires the following sections:
+                            </h3>
+                            <ul className="list-disc">
+                                {results.isProperStructure.title.found 
+                                    ? <li><div className="flex items-center gap-1">Title <PagePreview matchingBlocks={results.isProperStructure.title.matchingBlocks} pageImage={results.isProperStructure.title.image} /></div></li>
+                                    : <li className="text-gray-400">Title</li>
+                                }
+
+                                {results.isProperStructure.toc.found 
+                                    ? <li><div className="flex items-center gap-1">Table of Contents <PagePreview matchingBlocks={results.isProperStructure.toc.matchingBlocks} pageImage={results.isProperStructure.toc.image} /></div></li>
+                                    : <li className="text-gray-400">Table of Contents</li>
+                                }
+                                
+                                {results.isProperStructure.requiredSections.map((section) => {
+                                    return <li className="text-gray-400">{section}</li>
+                                })}
+                            </ul>
+
+                            </div>
+                        </div>
+                    )}
+                </ResultSummary>
+
+            </div>
         </>
-      )}
-    </>
-  );
+    );
 }
 
 export default Results;
