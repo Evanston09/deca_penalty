@@ -7,48 +7,57 @@ import {
   PdfJsTextExtractor,
   TesseractTextExtractor,
 } from "./validators/textExtrators";
-import { EventFormat, UserParams } from "./validators/ValidatorTypes";
-import { DECA_EVENTS, DECA_EVENTS_OBJECT } from "./decaEvents";
+import { EventFormat, UserParams } from "./ValidatorTypes";
+import { DECA_EVENTS_OBJECT } from "./decaEvents";
 
 export async function checkPDF(userParams: UserParams) {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-        "pdfjs-dist/build/pdf.worker.min.mjs",
-        import.meta.url,
-    ).toString();
+  pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+    "pdfjs-dist/build/pdf.worker.min.mjs",
+    import.meta.url,
+  ).toString();
 
-    let eventValidator;
+  let eventValidator;
 
-    const pdf = await pdfjsLib.getDocument({
-        url: new URL(userParams.pdfLink),
-    }).promise;
+  const pdf = await pdfjsLib.getDocument({
+    url: new URL(userParams.pdfLink),
+  }).promise;
 
-    const pages = await EventValidator.getPages(pdf);
+  const event = DECA_EVENTS_OBJECT[userParams.event];
 
-    const textExtractor = new TesseractTextExtractor();
-    const textResults = await textExtractor.extractText(pages);
-    console.log(textResults);
+  const pages = await EventValidator.getPages(pdf);
 
-    switch (userParams.eventType) {
-        case EventFormat.Pitch:
-            eventValidator = new EventValidator(eventValidatorConfigs.pitch);
-            break;
-        case EventFormat.Written:
-            eventValidator = new EventValidator(eventValidatorConfigs.written);
-            break;
-    }
+  const textExtractor = new PdfJsTextExtractor();
+  const textResults = await textExtractor.extractText(pages, .5);
 
-    const pdfParams = {
-        pdf,
-        pages,
-        analyzeImages: userParams.useImage,
-        textResults,
-        event: DECA_EVENTS_OBJECT.SMG,
-    };
 
-    console.log(eventValidator.validateDimensions(pdfParams));
-    return {
-        isPageLimit: true,
-        isRightDimensions: true,
-        isClearNumbering:true
-    }
+switch (event.type) {
+    case EventFormat.Pitch:
+      eventValidator = new EventValidator(eventValidatorConfigs.pitch);
+      break;
+    case EventFormat.Written:
+      eventValidator = new EventValidator(eventValidatorConfigs.written);
+      break;
+  }
+
+  const pdfParams = {
+    pdf,
+    pages,
+    analyzeImages: userParams.useImage,
+    textResults,
+    event
+  };
+
+  const pageLimitResult = eventValidator.validatePageLimit(pdfParams);
+  const dimenstionResult = eventValidator.validateDimensions(pdfParams);
+  const structureResult = eventValidator.validateStructure(pdfParams);
+ 
+  const score = 100 - (pageLimitResult.isValid ? 0 : 5)
+
+  return {
+    isPageLimit: pageLimitResult,
+    isRightDimensions: dimenstionResult,
+    isProperStructure: structureResult,
+    isClearNumbering: true,
+    score: 100
+  };
 }
