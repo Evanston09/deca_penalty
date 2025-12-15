@@ -50,6 +50,7 @@ switch (event.type) {
   const pageLimitResult = eventValidator.validatePageLimit(pdfParams);
   const dimenstionResult = eventValidator.validateDimensions(pdfParams);
   const structureResult = eventValidator.validateStructure(pdfParams);
+  const clearNumResult = eventValidator.validateClearNumbering(pdfParams);
  
   const score = 100 - (pageLimitResult.isValid ? 0 : 5)
 
@@ -57,7 +58,7 @@ switch (event.type) {
     isPageLimit: pageLimitResult,
     isRightDimensions: dimenstionResult,
     isProperStructure: structureResult,
-    isClearNumbering: true,
+    isClearNumbering: clearNumResult,
     score: 100
   };
 }

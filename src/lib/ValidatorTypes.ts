@@ -21,6 +21,7 @@ export type StructureConfig = {
     titleIndex: number;
     tocIndex: number;
   };
+  eventType: EventFormat;
 };
 
 export type TextBBox = {
@@ -39,12 +40,8 @@ export type TextResult = {
   textObjs: TextObject[];
 };
 export type TextBlockSearchResult =
-  | { found: false; targetText: string }
-  | { found: true; targetText: string; matchingBlocks: TextObject[], image: Blob };
-
-export interface TextExtractor {
-  extractText(pages: pdfjsLib.PDFPageProxy[], scale: number): Promise<TextResult[]>;
-}
+  | { found: false; name: string }
+  | { found: true; name: string; matchingBlocks: TextObject[], image: Blob };
 
 export enum EventFormat {
   Written = "Written",
@@ -77,11 +74,13 @@ export type Result = {
   };
   isProperStructure: {
     isValid: boolean;
-    requiredSections: string[];
     title: TextBlockSearchResult;
     toc: TextBlockSearchResult;
-    validSections: TextBlockSearchResult[];
+    sections: TextBlockSearchResult[];
   };
-  isClearNumbering: boolean;
+  isClearNumbering: {
+    isValid: boolean;
+    pages: TextBlockSearchResult[];
+  };
   score: number;
 };

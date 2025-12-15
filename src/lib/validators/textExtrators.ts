@@ -1,10 +1,10 @@
-import { TextExtractor, TextResult } from "../ValidatorTypes";
+import { TextResult } from "../ValidatorTypes";
 import Tesseract from "tesseract.js";
 import { PDFPageProxy } from "pdfjs-dist";
 import { TextItem } from "pdfjs-dist/types/src/display/api";
 import * as pdfjsLib from "pdfjs-dist";
 
-abstract class BaseTextExtractor implements TextExtractor {
+abstract class BaseTextExtractor {
   protected async convertPageToImage(page: PDFPageProxy, scale: number) {
     const viewport = page.getViewport({ scale: scale });
     const canvas = new OffscreenCanvas(viewport.width, viewport.height);

@@ -1,7 +1,9 @@
 import {
+    EventFormat,
   PDFParams,
   StructureConfig,
   TextBlockSearchResult,
+  TextObject,
   TextResult,
 } from "../ValidatorTypes";
 import * as pdfjsLib from "pdfjs-dist";
@@ -14,6 +16,7 @@ export const eventValidatorConfigs = {
       titleIndex: 1,
       tocIndex: 2,
     },
+    eventType: EventFormat.Pitch
   },
   written: {
     // Counting title and TOC
@@ -23,6 +26,7 @@ export const eventValidatorConfigs = {
       titleIndex: 0,
       tocIndex: 1,
     },
+    eventType: EventFormat.Written
   },
 };
 
@@ -90,46 +94,122 @@ export class EventValidator {
       pdfParams.textResults[this.config.pageIndexes.tocIndex],
     );
 
-    let validSections = [];
-    let sectionPool = pdfParams.event.sections;
+    let foundSections = new Map<string, TextBlockSearchResult>();
 
     for (let text of pdfParams.textResults.slice(
       this.config.pageIndexes.tocIndex + 1,
     )) {
-      let foundSections = [];
-      for (const section of sectionPool) {
+      for (const section of pdfParams.event.sections) {
+        const sectionName = section.length > 1 ? section.join("/") : section[0];
+
+        // Skip if already found
+        if (foundSections.has(sectionName)) continue;
+
         for (const possibility of section) {
           const result = this.findTextBlocks(possibility, text);
 
           if (result.found) {
-            validSections.push(result);
-            foundSections.push(section);
+            foundSections.set(sectionName, result);
             break;
           }
         }
       }
-      // When section is found remove it from the pool
-      sectionPool = sectionPool.filter(
-        (section) => !foundSections.includes(section),
-      );
     }
 
+    // Create sections array with all required sections
+    const sections: TextBlockSearchResult[] = pdfParams.event.sections.map((section) => {
+      const sectionName = section.length > 1 ? section.join("/") : section[0];
+      const foundResult = foundSections.get(sectionName);
+
+      if (foundResult && foundResult.found) {
+        return foundResult;
+      } else {
+        return {
+          found: false,
+          name: sectionName,
+        };
+      }
+    });
+
     const isValid =
-      validSections.length === pdfParams.event.sections.length &&
+      foundSections.size === pdfParams.event.sections.length &&
       tocResult.found &&
       titleResult.found;
-    const requiredSections = pdfParams.event.sections.map((section) =>
-      section.length > 1 ? section.join("/") : section[0],
-    );
 
     return {
       isValid,
-      requiredSections,
       title: titleResult,
       toc: tocResult,
-      validSections,
+      sections,
     };
   }
+
+  validateClearNumbering(pdfParams: PDFParams) {
+        let results = []
+        // If written event start numbering from after TOC; if pitch start numbering from the beginning
+        const startPageIndex = this.config.eventType === EventFormat.Written
+            ? this.config.pageIndexes.tocIndex + 1
+            : 0;
+
+        for (let i = 0; i < (pdfParams.pages.length - startPageIndex); i++) {
+            const pageIndex = startPageIndex + i;
+            const text = pdfParams.textResults[pageIndex];
+            const page = pdfParams.pages[pageIndex];
+            const expectedPageNum = i + 1;
+
+            // Get accurate height/width dimensions for the bbox within textResults
+            const viewport = page.getViewport({ scale: 0.5 });
+            const pageWidth = viewport.width;
+            const pageHeight = viewport.height;
+
+            const inEdge = text.textObjs.filter((textObj) => this.isTxtObjInEdge(pageWidth, pageHeight, textObj))
+            console.log(inEdge);
+
+            let found = false;
+            for (let textObj of inEdge) {
+                let matches = textObj.text.match(/\d+/g)
+                if (!matches)
+                    continue;
+                let nums = matches.map((match) => Number(match));
+                if (nums.includes(expectedPageNum)) {
+                    results.push({
+                        found: true,
+                        name: expectedPageNum,
+                        matchingBlocks: [textObj],
+                        image: text.image
+                    })
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found) {
+                results.push({
+                    found: false,
+                    name: expectedPageNum,
+                })
+            }
+        }
+
+        const isValid = results.every((result) => result.found);
+
+        return {
+            isValid, 
+            pages: results
+        };
+    }
+
+    private isTxtObjInEdge(width: number, height: number, textObj: TextObject, cutoff = 0.1) {
+        const x = textObj.bbox.left;
+        const y = textObj.bbox.bottom;
+
+        const isLeft = x < cutoff * width;
+        const isRight = x > (1 - cutoff) * width;
+        const isTop = y < cutoff * height;
+        const isBottom = y > (1 - cutoff) * height;
+
+        return isLeft || isRight || isTop || isBottom;
+    }
 
   private findTextBlocks(
     targetText: string,
@@ -141,7 +221,7 @@ export class EventValidator {
     if (startPosition === -1) {
       return {
         found: false,
-        targetText,
+        name: targetText,
       };
     }
 //2161
@@ -163,7 +243,7 @@ export class EventValidator {
     return {
       found: true,
       image: block.image,
-      targetText,
+      name: targetText,
       matchingBlocks,
     };
   }

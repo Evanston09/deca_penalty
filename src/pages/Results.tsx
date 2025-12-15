@@ -10,83 +10,83 @@ import ResultSummary from "../components/ResultSummary.tsx";
 import {Result} from"../lib/ValidatorTypes.ts";
 
 function Results() {
-  const location = useLocation();
-  const [windowSize, setWindowSize] = useState({
-    height: document.body.scrollHeight,
-    width: document.body.clientWidth,
-  });
-
-  const state = location.state;
-
-  const [results, setResults] = useState<Result | null>(null);
-  const [progress, setProgress] = useState<{
-    status: string;
-    progress: number;
-  }>({ status: "Initializing", progress: 0 });
-
-  const pdfLink = useMemo(() => {
-    if (state) {
-      return URL.createObjectURL(state.pdf);
-    }
-  }, [state]);
-
-  useEffect(() => {
-    if (pdfLink && state) {
-      const fetchResults = async () => {
-        setResults(
-          await checkPDF({
-            pdfLink,
-            pageNumber: state.pageNumber,
-            useImage: state.useImages,
-            event: state.event
-        }),
-        );
-      };
-      fetchResults();
-    }
-  }, []); 
-  console.log(results)
-  
-  useEffect(() => {
-    function handleResize() {
-      setWindowSize({
+    const location = useLocation();
+    const [windowSize, setWindowSize] = useState({
         height: document.body.scrollHeight,
         width: document.body.clientWidth,
-      });
+    });
+
+    const state = location.state;
+
+    const [results, setResults] = useState<Result | null>(null);
+    const [progress, setProgress] = useState<{
+        status: string;
+        progress: number;
+    }>({ status: "Initializing", progress: 0 });
+
+    const pdfLink = useMemo(() => {
+        if (state) {
+            return URL.createObjectURL(state.pdf);
+        }
+    }, [state]);
+
+    useEffect(() => {
+        if (pdfLink && state) {
+            const fetchResults = async () => {
+                setResults(
+                    await checkPDF({
+                        pdfLink,
+                        pageNumber: state.pageNumber,
+                        useImage: state.useImages,
+                        event: state.event
+                    }),
+                );
+            };
+            fetchResults();
+        }
+    }, []); 
+    console.log(results)
+
+    useEffect(() => {
+        function handleResize() {
+            setWindowSize({
+                height: document.body.scrollHeight,
+                width: document.body.clientWidth,
+            });
+        }
+
+        handleResize();
+        window.addEventListener("resize", handleResize);
+
+        return () => window.removeEventListener("resize", handleResize);
+    }, []);
+
+    if (!state || !pdfLink) {
+        return <Error message="No PDF File!" />;
     }
 
-    handleResize();
-    window.addEventListener("resize", handleResize);
+    return (
+        <>
+            <div className='flex flex-row gap-2 items-center mr-auto hover:underline mb-4'>
+                <MoveLeft />
+                <Link to="/">Go Home</Link>
+            </div>
 
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+            {results &&
+                Object.values(results).every((item) => item === true) &&
+                state.isIntegrityDone && (
+                    <Confetti
+                        className="w-full overflow-hidden"
+                        width={windowSize.width}
+                        height={windowSize.height}
+                        // DECA Colors :)
+                        colors={["#0072ce", "#85754e", "#8c9091"]}
+                    />
+                )}
 
-  if (!state || !pdfLink) {
-    return <Error message="No PDF File!" />;
-  }
-
-  return (
-    <>
-      <div className='flex flex-row gap-2 items-center mr-auto hover:underline mb-4'>
-        <MoveLeft />
-        <Link to="/">Go Home</Link>
-      </div>
-      
-      {results &&
-        Object.values(results).every((item) => item === true) &&
-        state.isIntegrityDone && (
-          <Confetti
-            className="w-full overflow-hidden"
-            width={windowSize.width}
-            height={windowSize.height}
-            // DECA Colors :)
-            colors={["#0072ce", "#85754e", "#8c9091"]}
-          />
-        )}
-
-      <h1 className="text-2xl md:text-5xl font-semibold">
-        Prepared Event Penalty Checker
-      </h1>
+            <h1 className="text-2xl md:text-5xl font-semibold">
+                Prepared Event Penalty Checker
+            </h1>
             <GagueChart percentage={results?.score}/>
             <div className="w-full max-w-4xl p-6 rounded-xl border space-y-2">
                 <h2 className="text-xl font-semibold mb-4">Submission Checklist</h2>
@@ -142,25 +142,64 @@ function Results() {
                     {results && (
                         <div className="space-y-3">
                             <div>
+                                <h3 className="font-semibold text-gray-200 text-base">
+                                    This event requires the following sections:
+                                </h3>
+                                <ul className="list-disc">
+                                    {results.isProperStructure.title.found 
+                                        ? <li><div className="flex items-center gap-1">Title <PagePreview matchingBlocks={results.isProperStructure.title.matchingBlocks} pageImage={results.isProperStructure.title.image} /></div></li>
+                                        : <li className="text-gray-400">Title</li>
+                                    }
+
+                                    {results.isProperStructure.toc.found
+                                        ? <li><div className="flex items-center gap-1">Table of Contents <PagePreview matchingBlocks={results.isProperStructure.toc.matchingBlocks} pageImage={results.isProperStructure.toc.image} /></div></li>
+                                        : <li className="text-gray-400">Table of Contents</li>
+                                    }
+
+                                    {results.isProperStructure.sections.map((section, index) => {
+                                        return section.found
+                                            ? <li key={index}><div className="flex items-center gap-1">{section.name} <PagePreview matchingBlocks={section.matchingBlocks} pageImage={section.image} /></div></li>
+                                            : <li key={index} className="text-gray-400">{section.name}</li>
+                                    })}
+                                </ul>
+
+                            </div>
+                        </div>
+                    )}
+                </ResultSummary>
+                <ResultSummary
+                    isDone={results?.isClearNumbering.isValid}
+                    text="Pages have clear and visible numbering"
+                >
+                    {results && (
+                        <div className="space-y-3">
                             <h3 className="font-semibold text-gray-200 text-base">
-                                This event requires the following sections:
+                                Certain pages must have clear page numbers
                             </h3>
-                            <ul className="list-disc">
-                                {results.isProperStructure.title.found 
-                                    ? <li><div className="flex items-center gap-1">Title <PagePreview matchingBlocks={results.isProperStructure.title.matchingBlocks} pageImage={results.isProperStructure.title.image} /></div></li>
-                                    : <li className="text-gray-400">Title</li>
-                                }
 
-                                {results.isProperStructure.toc.found 
-                                    ? <li><div className="flex items-center gap-1">Table of Contents <PagePreview matchingBlocks={results.isProperStructure.toc.matchingBlocks} pageImage={results.isProperStructure.toc.image} /></div></li>
-                                    : <li className="text-gray-400">Table of Contents</li>
-                                }
-                                
-                                {results.isProperStructure.requiredSections.map((section) => {
-                                    return <li className="text-gray-400">{section}</li>
-                                })}
-                            </ul>
+                            <div className="space-y-1">
 
+                                <div className="space-y-2">
+                                    <ul className="list-disc pl-5">
+                                        {results.isClearNumbering.pages.map((pageResult, index) => {
+                                            return pageResult.found ? (
+                                                <li key={index}>
+                                                    <div className="flex items-center gap-1">
+                                                        Page {pageResult.name}
+                                                        <PagePreview
+                                                            matchingBlocks={pageResult.matchingBlocks}
+                                                            pageImage={pageResult.image}
+                                                        />
+                                                    </div>
+                                                </li>
+                                            ) : (
+                                                    <li key={index} className="text-gray-400">
+                                                        Page {pageResult.name}
+                                                    </li>
+                                                );
+                                        })}
+                                    </ul>
+                                </div>
                             </div>
                         </div>
                     )}
