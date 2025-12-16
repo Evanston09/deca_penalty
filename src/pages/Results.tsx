@@ -44,7 +44,7 @@ function Results() {
             };
             fetchResults();
         }
-    }, []); 
+    }, []);
     console.log(results)
 
     useEffect(() => {
@@ -177,29 +177,27 @@ function Results() {
                                 Certain pages must have clear page numbers
                             </h3>
 
-                            <div className="space-y-1">
 
-                                <div className="space-y-2">
-                                    <ul className="list-disc pl-5">
-                                        {results.isClearNumbering.pages.map((pageResult, index) => {
-                                            return pageResult.found ? (
-                                                <li key={index}>
-                                                    <div className="flex items-center gap-1">
-                                                        Page {pageResult.name}
-                                                        <PagePreview
-                                                            matchingBlocks={pageResult.matchingBlocks}
-                                                            pageImage={pageResult.image}
-                                                        />
-                                                    </div>
+                            <div className="space-y-2">
+                                <ul className="list-disc pl-5">
+                                    {results.isClearNumbering.pages.map((pageResult, index) => {
+                                        return pageResult.found ? (
+                                            <li key={index}>
+                                                <div className="flex items-center gap-1">
+                                                    Page {pageResult.name}
+                                                    <PagePreview
+                                                        matchingBlocks={pageResult.matchingBlocks}
+                                                        pageImage={pageResult.image}
+                                                    />
+                                                </div>
+                                            </li>
+                                        ) : (
+                                                <li key={index} className="text-gray-400">
+                                                    Page {pageResult.name}
                                                 </li>
-                                            ) : (
-                                                    <li key={index} className="text-gray-400">
-                                                        Page {pageResult.name}
-                                                    </li>
-                                                );
-                                        })}
-                                    </ul>
-                                </div>
+                                            );
+                                    })}
+                                </ul>
                             </div>
                         </div>
                     )}

@@ -91,6 +91,12 @@ export class TesseractTextExtractor extends BaseTextExtractor {
 
     const images = await Promise.all(pages.map((page) => this.convertPageToImage(page, scale)));
 
+    // Debug: Log image URLs
+    console.log('Tesseract page images:', images.map((img, i) => ({
+      page: i + 1,
+      url: URL.createObjectURL(img)
+    })));
+
     const textPromises = images.map(async (image) => {
       const result = await scheduler.addJob(
         "recognize",
@@ -101,7 +107,7 @@ export class TesseractTextExtractor extends BaseTextExtractor {
 
       let textObjs = [];
 
-      // Blocks = true so we can ignore the null thing
+      // Blocks = true so it will never be null 
       for (let block of result.data.blocks!) {
         for (let paragraph of block.paragraphs) {
           for (let line of paragraph.lines) {

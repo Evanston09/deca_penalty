@@ -163,7 +163,6 @@ export class EventValidator {
             const pageHeight = viewport.height;
 
             const inEdge = text.textObjs.filter((textObj) => this.isTxtObjInEdge(pageWidth, pageHeight, textObj))
-            console.log(inEdge);
 
             let found = false;
             for (let textObj of inEdge) {

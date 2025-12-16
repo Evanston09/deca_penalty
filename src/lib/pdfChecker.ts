@@ -29,6 +29,9 @@ export async function checkPDF(userParams: UserParams) {
   const textExtractor = new PdfJsTextExtractor();
   const textResults = await textExtractor.extractText(pages, .5);
 
+  const test = new TesseractTextExtractor();
+  console.log(await test.extractText(pages, 2));
+
 
 switch (event.type) {
     case EventFormat.Pitch:
