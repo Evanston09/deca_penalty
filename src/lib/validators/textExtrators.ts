@@ -1,5 +1,4 @@
 import { TextResult } from "../ValidatorTypes";
-import Tesseract from "tesseract.js";
 import { PDFPageProxy } from "pdfjs-dist";
 import { TextItem } from "pdfjs-dist/types/src/display/api";
 import * as pdfjsLib from "pdfjs-dist";

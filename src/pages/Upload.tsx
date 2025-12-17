@@ -116,7 +116,7 @@ async function submit() {
                     </label>
                     <label>
                         What event are you in?:
-                        <DropdownMenu side="bottom">
+                        <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <button
                                     className="inline-flex items-center justify-between border rounded px-3 py-1 ml-2"
