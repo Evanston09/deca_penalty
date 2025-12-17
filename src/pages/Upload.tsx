@@ -16,11 +16,11 @@ import { DECA_EVENTS_OBJECT } from "../lib/decaEvents";
 
 function Upload() {
   const navigate = useNavigate();
-  const [selectedEvent, setSelectedEvent] = useState("Innovation Plan");
-  const [isIntegrityDone, setIntegrityDone] = useState(false);
-  const [useImages, setUseImages] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<string | null>(null);
+  const [isIntegrityFilled, setIntegrityFilled] = useState(false);
   const [pdfUpload, setPDFUpload] = useState<File | null>(null);
   const [pdfError, setPDFError] = useState(false);
+  const [eventError, setEventError] = useState(false);
   
 
    console.log(selectedEvent);
@@ -58,12 +58,15 @@ async function submit() {
       setPDFError(true);
       return;
     }
+    if (!selectedEvent) {
+      setEventError(true);
+      return;
+    }
     navigate("/results", {
       state: {
         pdf: pdfUpload,
-        isIntegrityDone: isIntegrityDone,
+        isIntegrityFilled,
         event: selectedEvent,
-        useImages: useImages,
       },
     });
   }
@@ -101,22 +104,11 @@ async function submit() {
 
         <div className="text-sm md:text-base flex flex-col gap-1">
           <label>
-            Have you completed the Written Statement of Assurances and Academic
+            Have you signed the Prepared Event Statement of Assurances and Academic
             Integrity?
             <input
-              checked={isIntegrityDone}
-              onChange={(e) => setIntegrityDone(e.target.checked)}
-                            type="checkbox"
-                            name="integrity"
-                            className="ml-2 accent-deca-blue"
-                        />
-                    </label>
-                    <label>
-                        Analyze images? (Helpful if page numbers are images. Takes more
-                        time.)
-                        <input
-                            checked={useImages}
-                            onChange={(e) => setUseImages(e.target.checked)}
+              checked={isIntegrityFilled}
+              onChange={(e) => setIntegrityFilled(e.target.checked)}
                             type="checkbox"
                             name="integrity"
                             className="ml-2 accent-deca-blue"
@@ -140,7 +132,7 @@ async function submit() {
                                         <DropdownMenuPortal>
                                             <DropdownMenuSubContent>
                                                 {decaEventsByCategory[category].map((event) => {
-                                                    return <DropdownMenuItem key={event} onSelect={()=>setSelectedEvent(event)}>{event}</DropdownMenuItem>
+                                                    return <DropdownMenuItem key={event} onSelect={()=>{setSelectedEvent(event); setEventError(false);}}>{event}</DropdownMenuItem>
                                                 })}
                                             </DropdownMenuSubContent>
                                         </DropdownMenuPortal>
@@ -149,6 +141,7 @@ async function submit() {
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </label>
+                    {eventError && <p className="text-red-500">No event selected</p>}
         </div>
 
         <button className="text-base md:text-lg font-semibold w-full bg-deca-blue hover:bg-deca-blue-hover p-4 rounded-lg">

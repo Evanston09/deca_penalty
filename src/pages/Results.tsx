@@ -19,10 +19,6 @@ function Results() {
     const state = location.state;
 
     const [results, setResults] = useState<Result | null>(null);
-    const [progress, setProgress] = useState<{
-        status: string;
-        progress: number;
-    }>({ status: "Initializing", progress: 0 });
 
     const pdfLink = useMemo(() => {
         if (state) {
@@ -36,8 +32,7 @@ function Results() {
                 setResults(
                     await checkPDF({
                         pdfLink,
-                        pageNumber: state.pageNumber,
-                        useImage: state.useImages,
+                        isIntegrityFilled: state.isIntegrityFilled,
                         event: state.event
                     }),
                 );
@@ -45,7 +40,6 @@ function Results() {
             fetchResults();
         }
     }, []);
-    console.log(results)
 
     useEffect(() => {
         function handleResize() {
@@ -72,9 +66,8 @@ function Results() {
                 <Link to="/">Go Home</Link>
             </div>
 
-            {results &&
-                Object.values(results).every((item) => item === true) &&
-                state.isIntegrityDone && (
+            {results && results.score === 100 &&
+                (
                     <Confetti
                         className="w-full overflow-hidden"
                         width={windowSize.width}
@@ -88,8 +81,22 @@ function Results() {
                 Prepared Event Penalty Checker
             </h1>
             <GagueChart percentage={results?.score}/>
-            <div className="w-full max-w-4xl p-6 rounded-xl border space-y-2">
+            <div className="w-full max-w-4xl space-y-2">
+                <div className="p-6 rounded-xl border space-y-2">
                 <h2 className="text-xl font-semibold mb-4">Submission Checklist</h2>
+                <ResultSummary isDone={results?.isIntegrityFilled} text={"Prepared Event Statement of Integrity Signed"}>
+                    {results && (
+                        <div className="space-y-3">
+                            <h3 className="font-semibold text-gray-200 text-base">
+                                This event requires that the Prepared Event Statement of Assurances and Academic Integrity be signed
+                            </h3>
+                            <p>
+                                You {results.isIntegrityFilled ? ' have ' : ' have not '} filled this out
+                            </p>
+                        </div>
+                    )}
+
+                </ResultSummary>
                 <ResultSummary isDone={results?.isPageLimit.isValid} text={"Within max number of pages"}>
                     {results && (
                         <div className="space-y-3">
@@ -202,7 +209,8 @@ function Results() {
                         </div>
                     )}
                 </ResultSummary>
-
+                </div>
+                <span className="text-gray-400 text-xs">* Results may be inaccurate. Verify all penalties before submission. Read why <Link className="underline" to="/limitations">here</Link>.</span>
             </div>
         </>
     );

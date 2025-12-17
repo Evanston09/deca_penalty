@@ -145,7 +145,7 @@ export class EventValidator {
   }
 
   validateClearNumbering(pdfParams: PDFParams) {
-        let results = []
+        let results: TextBlockSearchResult[] = []
         // If written event start numbering from after TOC; if pitch start numbering from the beginning
         const startPageIndex = this.config.eventType === EventFormat.Written
             ? this.config.pageIndexes.tocIndex + 1
@@ -173,7 +173,7 @@ export class EventValidator {
                 if (nums.includes(expectedPageNum)) {
                     results.push({
                         found: true,
-                        name: expectedPageNum,
+                        name: String(expectedPageNum),
                         matchingBlocks: [textObj],
                         image: text.image
                     })
@@ -185,7 +185,7 @@ export class EventValidator {
             if (!found) {
                 results.push({
                     found: false,
-                    name: expectedPageNum,
+                    name: String(expectedPageNum),
                 })
             }
         }

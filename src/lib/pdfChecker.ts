@@ -5,7 +5,6 @@ import {
 } from "./validators/EventValidator";
 import {
   PdfJsTextExtractor,
-  TesseractTextExtractor,
 } from "./validators/textExtrators";
 import { EventFormat, UserParams } from "./ValidatorTypes";
 import { DECA_EVENTS_OBJECT } from "./decaEvents";
@@ -29,9 +28,6 @@ export async function checkPDF(userParams: UserParams) {
   const textExtractor = new PdfJsTextExtractor();
   const textResults = await textExtractor.extractText(pages, .5);
 
-  const test = new TesseractTextExtractor();
-  console.log(await test.extractText(pages, 2));
-
 
 switch (event.type) {
     case EventFormat.Pitch:
@@ -45,23 +41,46 @@ switch (event.type) {
   const pdfParams = {
     pdf,
     pages,
-    analyzeImages: userParams.useImage,
     textResults,
     event
   };
 
   const pageLimitResult = eventValidator.validatePageLimit(pdfParams);
-  const dimenstionResult = eventValidator.validateDimensions(pdfParams);
+  const dimensionResult = eventValidator.validateDimensions(pdfParams);
   const structureResult = eventValidator.validateStructure(pdfParams);
   const clearNumResult = eventValidator.validateClearNumbering(pdfParams);
- 
-  const score = 100 - (pageLimitResult.isValid ? 0 : 5)
+
+  let score = 100;
+
+  // Integrity not filled: -15 points
+  if (!userParams.isIntegrityFilled) {
+    score -= 15;
+  }
+
+  // Page over limit: -5 points per extra page
+  if (!pageLimitResult.isValid) {
+    const extraPages = Math.max(0, pageLimitResult.actualPages - pageLimitResult.expectedPages);
+    score -= extraPages * 5;
+  }
+
+  if (!dimensionResult.isValid) {
+    score -= 5;
+  }
+  if (!structureResult.isValid) {
+    score -= 5;
+  }
+  if (!clearNumResult.isValid) {
+    score -= 5;
+  }
+
+  score = Math.max(0, score);
 
   return {
+    isIntegrityFilled: userParams.isIntegrityFilled,
     isPageLimit: pageLimitResult,
-    isRightDimensions: dimenstionResult,
+    isRightDimensions: dimensionResult,
     isProperStructure: structureResult,
     isClearNumbering: clearNumResult,
-    score: 100
+    score: score
   };
 }

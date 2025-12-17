@@ -3,15 +3,13 @@ import * as pdfjsLib from "pdfjs-dist";
 export type PDFParams = {
   pdf: pdfjsLib.PDFDocumentProxy;
   pages: pdfjsLib.PDFPageProxy[];
-  analyzeImages: boolean;
   textResults: TextResult[];
   event: DecaEvent;
 };
 
 export type UserParams = {
   pdfLink: string;
-  pageNumber: number;
-  useImage: boolean;
+  isIntegrityFilled: boolean;
   event: string;
 };
 export type StructureConfig = {
@@ -55,6 +53,7 @@ export type DecaEvent = {
 };
 
 export type Result = {
+  isIntegrityFilled: boolean;
   isPageLimit: {
     isValid: boolean;
     expectedPages: number;
