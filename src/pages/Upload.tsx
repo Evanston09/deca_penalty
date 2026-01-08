@@ -1,14 +1,39 @@
-import { useCallback, useState } from "react";
+import { useCallback, useState, useMemo } from "react";
+import { ChevronDown } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 import { useNavigate } from "react-router";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuPortal,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { DECA_EVENTS_OBJECT } from "../lib/decaEvents";
 
 function Upload() {
   const navigate = useNavigate();
-  const [pageNumber, setPageNumber] = useState(10);
-  const [isIntegrityDone, setIntegrityDone] = useState(false);
-  const [useImages, setUseImages] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<string | null>(null);
+  const [isIntegrityFilled, setIntegrityFilled] = useState(false);
   const [pdfUpload, setPDFUpload] = useState<File | null>(null);
   const [pdfError, setPDFError] = useState(false);
+  const [eventError, setEventError] = useState(false);
+  
+
+   console.log(selectedEvent);
+   const decaEventsByCategory = useMemo(() => {
+        let decaEventsByCategory: Record<string, string[]> = {};
+        for (const event of Object.values(DECA_EVENTS_OBJECT)) {
+            if (!decaEventsByCategory[event.category]) {
+                decaEventsByCategory[event.category] = [];
+            }
+            decaEventsByCategory[event.category].push(event.name);
+        }
+        return decaEventsByCategory
+    }, [])
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
@@ -28,18 +53,20 @@ function Upload() {
       },
       maxFiles: 1,
     });
-
-  async function submit() {
+async function submit() {
     if (!pdfUpload) {
       setPDFError(true);
+      return;
+    }
+    if (!selectedEvent) {
+      setEventError(true);
       return;
     }
     navigate("/results", {
       state: {
         pdf: pdfUpload,
-        pageNumber: pageNumber,
-        isIntegrityDone: isIntegrityDone,
-        useImages: useImages,
+        isIntegrityFilled,
+        event: selectedEvent,
       },
     });
   }
@@ -47,7 +74,7 @@ function Upload() {
   return (
     <>
       <h1 className="text-2xl md:text-5xl font-semibold mb-4">
-        Written Event Penalty Checker
+        Prepared Event Penalty Checker
       </h1>
 
       <form action={submit} className="flex flex-col gap-4 max-w-full">
@@ -77,48 +104,48 @@ function Upload() {
 
         <div className="text-sm md:text-base flex flex-col gap-1">
           <label>
-            Have you completed the Written Statement of Assurances and Academic
+            Have you signed the Prepared Event Statement of Assurances and Academic
             Integrity?
             <input
-              checked={isIntegrityDone}
-              onChange={(e) => setIntegrityDone(e.target.checked)}
-              type="checkbox"
-              name="integrity"
-              className="ml-2 accent-deca-blue"
-            />
-          </label>
-          <label>
-            Analyze images? (Helpful if page numbers are images. Takes more
-            time.)
-            <input
-              checked={useImages}
-              onChange={(e) => setUseImages(e.target.checked)}
-              type="checkbox"
-              name="integrity"
-              className="ml-2 accent-deca-blue"
-            />
-          </label>
-
-          <label>
-            How many pages are in your event:
-            <select
-              value={pageNumber}
-              onChange={(e) => setPageNumber(Number(e.target.value))}
-              name="pages"
-              className="ml-2"
-            >
-              <option className="text-black" value="10">
-                10
-              </option>
-              <option className="text-black" value="20">
-                20
-              </option>
-            </select>
-          </label>
+              checked={isIntegrityFilled}
+              onChange={(e) => setIntegrityFilled(e.target.checked)}
+                            type="checkbox"
+                            name="integrity"
+                            className="ml-2 accent-deca-blue"
+                        />
+                    </label>
+                    <label>
+                        What event are you in?:
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <button
+                                    className="inline-flex items-center justify-between border rounded px-3 py-1 ml-2"
+                                >
+                                    {selectedEvent ?? "Select an event"}
+                                    <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+                                </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="w-56" align="start">
+                                    {Object.keys(decaEventsByCategory).map((category) => 
+                                    <DropdownMenuSub>
+                                        <DropdownMenuSubTrigger>{category}</DropdownMenuSubTrigger>
+                                        <DropdownMenuPortal>
+                                            <DropdownMenuSubContent>
+                                                {decaEventsByCategory[category].map((event) => {
+                                                    return <DropdownMenuItem key={event} onSelect={()=>{setSelectedEvent(event); setEventError(false);}}>{event}</DropdownMenuItem>
+                                                })}
+                                            </DropdownMenuSubContent>
+                                        </DropdownMenuPortal>
+                                    </DropdownMenuSub>
+                                )}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </label>
+                    {eventError && <p className="text-red-500">No event selected</p>}
         </div>
 
         <button className="text-base md:text-lg font-semibold w-full bg-deca-blue hover:bg-deca-blue-hover p-4 rounded-lg">
-          Check Written Event!
+          Check Prepared Event!
         </button>
       </form>
     </>
